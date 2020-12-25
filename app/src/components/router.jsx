@@ -117,9 +117,12 @@ class TableSelector extends Component {
 		this.setState({selectedDbid: event.target.value});
 	}
 
-	exportTable() {
-		var res = ipcRenderer.sendSync('get-table-details', {dbid: this.state.selectedDbid});
-		console.log("exportTable() ");
+	async exportTable() {
+		var res = await ipcRenderer.sendSync('get-table-details', {dbid: this.state.selectedDbid});
+		console.log("exportTAble() get-table-details:  ");
+		console.log(res);
+		var res = await ipcRenderer.sendSync('get-num-files');
+		console.log("exportTAble() get-num-files: ");
 		console.log(res);
 	}
 

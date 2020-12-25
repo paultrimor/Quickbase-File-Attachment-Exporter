@@ -75,16 +75,16 @@ ipcMain.on('get-tables', (event, props) => {
 });
 
 ipcMain.on('get-table-details', (event, props) => {
+	global.sharedObj['selectedDbid'] = props.dbid;
 	axios({
 		method: 'get',
 		url: global.sharedObj['domain']+'/db/'+props.dbid+'?a=API_GetSchema' +
-		'&ticket=' + global.sharedObj['authTicket'] 
+		'&ticket='+global.sharedObj['authTicket']
 	}).then(response => {
-		var props = {}; 
+		var props = {};
 		if(parseError(response, props)) {
 			var fileAttachmentIds = parseFileAttachments(response, props);
 			global.sharedObj['fileAttachmentIds'] =  fileAttachmentIds;
-			global.sharedObj['selectedDbid'] = props.dbid;
 			getNumFiles(); 
 		}
 		event.returnValue = props;
@@ -93,6 +93,30 @@ ipcMain.on('get-table-details', (event, props) => {
 		parseError(error, props);
 		event.returnValue = props;
 	});	
+});
+
+ipcMain.on('get-num-files', (event, props) => {
+	var query = global.sharedObj['fileAttachmentIds'].map((id) => {
+		return "{'"+id+"'.XEX.''}";
+	}).join("AND");
+	axios({
+		method: 'get',
+		url: global.sharedObj['domain']+'/db/'+
+		global.sharedObj['selectedDbid']+'?a=API_DoQueryCount'+
+		'&useFids=1&ticket='+global.sharedObj['authTicket']+
+		'&query='+query
+	}).then((response) =>{
+		var props = {};
+		if(parseError(response, props)) {
+			var numFiles = /(<numMatches>).*?(?=<\/numMatches>)/.exec(response.data)[0];
+			numFiles = errorCode.replace('<numMatches>', '');
+			props["numFiles"] = numFiles;
+		}
+		event.returnValue = props;
+	}).catch((error) => {
+		console.log("get-num-files axios error");
+		event.returnValue = "error";
+	});
 });
 
 var parseError = function(response, props) {
@@ -115,7 +139,6 @@ var parseError = function(response, props) {
    		props['errorMessage'] = 
    			`There was en error. 
    			 Try checking your browser or the domain you typed.`;
-   		props['authTicket'] = '';
    		return false;
    	}
 };
@@ -134,31 +157,13 @@ var parseTables = function(response) {
 };
 
 var parseFileAttachments = function(response, props) {
+
 	var myDom = new dom().parseFromString(response.data.toString());
 	var nodes = xpath.select("//field[@field_type='file']/@id", myDom);
 	var fileAttachmentIds = [];
 	nodes.forEach((attrs) => {
 		fileAttachmentIds.push(attrs.value);
 	});
-	props['numFileIds'] = fileAttachmentId.length; 
+	props['numFileIds'] = fileAttachmentIds.length; 
 	return fileAttachmentIds;
-};
-
-var getNumFiles = function() {
-
-	axios({
-		method: 'get',
-		url: global.sharedObj['domain']+'/db/'+
-		global.sharedObj['selectedDbid']+'?a=API_DoQuery'+
-		
-	}).then((response) => {
-
-		// PT Testing 
-		fs.writeFileSync(
-			__dirname + "/test/api_DoQuery_example.txt",
-			response.data.toString(),
-			{ flag: "w+" }			
-		);
-
-	});
 };
