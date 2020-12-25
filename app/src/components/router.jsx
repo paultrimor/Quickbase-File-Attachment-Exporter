@@ -118,6 +118,7 @@ class TableSelector extends Component {
 	}
 
 	async exportTable() {
+		// Work Stop
 		var res = await ipcRenderer.sendSync('get-table-details', {dbid: this.state.selectedDbid});
 		console.log("exportTAble() get-table-details:  ");
 		console.log(res);

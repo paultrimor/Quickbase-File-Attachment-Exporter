@@ -28,13 +28,12 @@ app.on('ready', function() {
 
 ipcMain.on('get-authentication', async (event, props) => {	
 	global.sharedObj['domain'] = props.domain;
-	var quickbaseUrl = 
-		props.domain + '/db/main?a=API_Authenticate' +
-		'&username=' + props.username +
-		'&password=' + props.password; 
 	axios({
   		method: 'get',
-  		url: quickbaseUrl,
+		url:
+			props.domain+'/db/main?a=API_Authenticate'+
+			'&username='+props.username +
+			'&password='+props.password,
   		params: {
   			a: 'API_Authenticate',
   			username: props.username, 
@@ -60,12 +59,11 @@ ipcMain.on('get-authentication', async (event, props) => {
 });
 
 ipcMain.on('get-tables', (event, props) => {
-	var quickbaseUrl = 
-		global.sharedObj['domain'] + '/db/main?a=API_GrantedDBs' +
-		'&ticket=' + global.sharedObj['authTicket']; 
 	axios({
 		method: 'get',
-		url: quickbaseUrl,
+		url:
+			global.sharedObj['domain'] + '/db/main?a=API_GrantedDBs' +
+			'&ticket=' + global.sharedObj['authTicket'],
 		responseType: 'json' 
 	}).then((response) => {
 		event.returnValue = parseTables(response);
@@ -85,7 +83,6 @@ ipcMain.on('get-table-details', (event, props) => {
 		if(parseError(response, props)) {
 			var fileAttachmentIds = parseFileAttachments(response, props);
 			global.sharedObj['fileAttachmentIds'] =  fileAttachmentIds;
-			getNumFiles(); 
 		}
 		event.returnValue = props;
 	}).catch(function(error) {
@@ -101,20 +98,20 @@ ipcMain.on('get-num-files', (event, props) => {
 	}).join("AND");
 	axios({
 		method: 'get',
-		url: global.sharedObj['domain']+'/db/'+
-		global.sharedObj['selectedDbid']+'?a=API_DoQueryCount'+
-		'&useFids=1&ticket='+global.sharedObj['authTicket']+
-		'&query='+query
+		url:
+			global.sharedObj['domain']+'/db/'+
+			global.sharedObj['selectedDbid']+'?a=API_DoQueryCount'+
+			'&useFids=1&query='+query+
+			'&ticket='+global.sharedObj['authTicket']
 	}).then((response) =>{
 		var props = {};
 		if(parseError(response, props)) {
 			var numFiles = /(<numMatches>).*?(?=<\/numMatches>)/.exec(response.data)[0];
-			numFiles = errorCode.replace('<numMatches>', '');
+			numFiles = numFiles.replace('<numMatches>', '');
 			props["numFiles"] = numFiles;
 		}
 		event.returnValue = props;
 	}).catch((error) => {
-		console.log("get-num-files axios error");
 		event.returnValue = "error";
 	});
 });
@@ -124,7 +121,7 @@ var parseError = function(response, props) {
    		var errorCode = /(<errcode>).*?(?=<\/errcode>)/.exec(response.data)[0];
    		errorCode = errorCode.replace('<errcode>', '');
    	}  catch (e) {
-   		var errorCodde = null;
+		var errorCode = null;
    	}
    	if (errorCode == 0) {
    		props['error'] = false; 
