@@ -15,8 +15,7 @@ global.sharedObj = {
 let win;
 
 app.on('ready', function() {
-	win = new BrowserWindow;
-	win.webContents.openDevTools();
+	win = new BrowserWindow({width: 400, height: 600});
 	win.loadURL(
 		path.resolve(__dirname, './index.html')); 
 	win.on('closed', () => {
@@ -109,10 +108,19 @@ ipcMain.on('get-num-files', (event, props) => {
 			var numFiles = /(<numMatches>).*?(?=<\/numMatches>)/.exec(response.data)[0];
 			numFiles = numFiles.replace('<numMatches>', '');
 			props["numFiles"] = numFiles;
+
+			if (parseInt(numFiles) === 0) {
+				props['error'] = true;
+				props['errorMessage'] = `
+					There aren't any file attachements on this table to export.
+				`;
+			}
 		}
 		event.returnValue = props;
 	}).catch((error) => {
-		event.returnValue = "error";
+		var props = {};
+		parseError(error, props);
+		event.returnValue = props;
 	});
 });
 
@@ -128,8 +136,13 @@ var parseError = function(response, props) {
    		return true;
    	} else if (errorCode > 1) {
    		props['error'] = true; 
-   		props['errorMessage'] = /<errdetail>.*?(?=<\/errdetail>)/.exec(response.data)[0];
-   		props['errorMessage'] = props['errorMessage'].replace('<errdetail>', ''); 
+   		try {
+   			props['errorMessage'] = /<errdetail>.*?(?=<\/errdetail>)/.exec(response.data)[0];
+   			props['errorMessage'] = props['errorMessage'].replace('<errdetail>', ''); 
+   		} catch (e) {
+   			props['errorMessage'] = `There was en error. 
+   			Try checking the table you selected.`;
+   		}
    		return false;
    	} else {
    		props['error'] = true; 
@@ -154,7 +167,6 @@ var parseTables = function(response) {
 };
 
 var parseFileAttachments = function(response, props) {
-
 	var myDom = new dom().parseFromString(response.data.toString());
 	var nodes = xpath.select("//field[@field_type='file']/@id", myDom);
 	var fileAttachmentIds = [];
