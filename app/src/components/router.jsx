@@ -23,6 +23,9 @@ class App extends Component {
 						<Route path='/tableSelection'>
 							<TableSelector />
 						</Route>
+						<Route path="/exportConsole">
+							<ExportConsole />
+						</Route>
 						<Route path='/'>
 							<Redirect to='/login' />
 						</Route>
@@ -97,10 +100,12 @@ class TableSelector extends Component {
 			error: false,
 			errorMessage: '',
 			numFiles: '',
-			canExport: false
+			canExport: false,
+			complete: false
 
 		};
 		this.getTableInfo = this.getTableInfo.bind(this);
+		this.exportTable = this.exportTable.bind(this);
 	}
 
 	async componentDidMount() {
@@ -123,7 +128,7 @@ class TableSelector extends Component {
 		this.setState({errorMessage: res.errorMessage});
 		if (!res.error) {
 			var res = await ipcRenderer.sendSync('get-num-files');
-			this.setState({error: res.error});	
+			this.setState({error: res.error});
 			this.setState({errorMessage: res.errorMessage});
 			this.setState({numFiles: res.numFiles});
 		}
@@ -134,7 +139,14 @@ class TableSelector extends Component {
 		}
 	}
 
+	exportTable() {
+		this.setState({complete: true});
+	}
+
 	render() {
+		if (this.state.complete) {
+			return <Redirect to="/exportConsole" />;
+		}
 		return (
 			<div style={{padding: "15px"}}>
 				<label for='appList'>Application Tables</label><br />
@@ -165,6 +177,7 @@ class TableSelector extends Component {
 				</div>
 				<button 
 					disabled={!this.state.canExport}
+					onClick={this.exportTable}
 					style={{
 						width: "85%",
 						position: "absolute", 
@@ -174,6 +187,16 @@ class TableSelector extends Component {
 				>Export {this.state.numFiles} Documents!</button>
 			</div>
 		)
+	}
+}
+
+class ExportConsole extends Component {
+	constructor() {
+		super();
+	}
+
+	render() {
+		<h1>Hello World</h1>
 	}
 }
 
