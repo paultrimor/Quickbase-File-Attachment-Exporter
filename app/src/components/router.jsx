@@ -79,7 +79,7 @@ function Login() {
 			<input type='text' name='password' onChange={handleChange}/><br />
 			<button onClick={getAuth}>Submit</button>
 			{
-				error ? <div><p>Error Message:</p><br/><p>{errormessage}</p></div>	
+				error ? <p style={{fontStyle: 'italic', color: 'red'}}>ERROR: {errormessage}</p>	
 		 		: [ ticket.length != 0 ? 
 		 			<Redirect to='/tableSelection' />
 		 			: <p>Please Login to QB App</p>
@@ -93,7 +93,7 @@ class TableSelector extends Component {
 	constructor() {
 		super();
 		this.state = {
-			selectedDbid: null, 
+			selectedDbid: '',
 			error: false,
 			errorMessage: '',
 			numFiles: '',
@@ -105,7 +105,8 @@ class TableSelector extends Component {
 
 	async componentDidMount() {
 		var tables = await ipcRenderer.sendSync('get-tables');
-		var items = []; 
+		var items = [];
+		items.push(<option value="" selected disabled hidden>Choose table to export here.</option>)
 		for (const table of tables) {
 			items.push(<option value={table.dbid}>{table.dbname}</option>); 
 		}
@@ -114,22 +115,23 @@ class TableSelector extends Component {
 
 	handleChange(event) {
 		this.setState({selectedDbid: event.target.value});
-	}
+	};
 
 	async getTableInfo() {
 		var res = await ipcRenderer.sendSync('get-table-details', {dbid: this.state.selectedDbid});
 		this.setState({error: res.error});
 		this.setState({errorMessage: res.errorMessage});
-		var res = await ipcRenderer.sendSync('get-num-files');
-		this.setState({numFiles: res.numFiles});
-
+		if (!res.error) {
+			var res = await ipcRenderer.sendSync('get-num-files');
+			this.setState({error: res.error});	
+			this.setState({errorMessage: res.errorMessage});
+			this.setState({numFiles: res.numFiles});
+		}
 		if (parseInt(this.state.numFiles) > 0 && !this.state.error) {
 			this.setState({canExport: true});
 		} else {
 			this.setState({canExport: false});
 		}
-		console.log("getTableInfo() END");
-		console.log(this.state);
 	}
 
 	render() {
@@ -140,22 +142,35 @@ class TableSelector extends Component {
 					width: "100%"
 				}}>
 					<select name='appList' onChange={this.handleChange.bind(this)}
-						style={{width: "75%"}}>
+						style={{width: "100%", padding: "5px"}}>
 						{this.state.tableList}
 					</select> 
-						<button onClick={this.getTableInfo} 
-							style={{width: "20%"}}>Get Table Info!</button>
+					<button 
+						disabled={this.state.selectedDbid.length === 0}
+						onClick={this.getTableInfo} 
+						style={{ marginTop: "10px", padding: "5px", display: "block",}}>Get Table Info</button>
 				</div>
-				{ this.state.error ?
-					<div>
-						<p>Error</p>
-						<p>{this.state.errorMessage}</p>
-					</div>
-					: <p></p>
-				}
+				<div class="message"
+					style={{display: 'block', margin: '5px 0px', height: '150px'}}>
+					{ this.state.error ?
+						<p style={{fontStyle: 'italic', color: 'red'}}>
+							<span style={{fontStyle: 'bold'}}>ERROR: </span>
+								{this.state.errorMessage}
+						</p>
+						: this.state.canExport ? 
+							<p style={{fontStyle: 'italic', color: 'green'}}>Success</p>
+							: 
+							<p></p>
+					}
+				</div>
 				<button 
 					disabled={!this.state.canExport}
-					style={{ position: "absolute", bottom: "20px", width: "80%", margin: "auto" }}
+					style={{
+						width: "85%",
+						position: "absolute", 
+						bottom: "20px", 
+						left: "50%", transform: "translate(-50%, 0)", 
+						padding: "5px" }}
 				>Export {this.state.numFiles} Documents!</button>
 			</div>
 		)

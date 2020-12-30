@@ -9,7 +9,7 @@ global.sharedObj = {
 	'authTicket': '', 
 	'domain': '',
 	'selectedDbid': '',
-	'fileAttachmentIds': ''
+	'fileAttachmentIds': []
 }; 
 
 let win;
@@ -81,7 +81,7 @@ ipcMain.on('get-table-details', (event, props) => {
 		var props = {};
 		if(parseError(response, props)) {
 			var fileAttachmentIds = parseFileAttachments(response, props);
-			global.sharedObj['fileAttachmentIds'] =  fileAttachmentIds;
+			global.sharedObj['fileAttachmentIds'] = fileAttachmentIds;
 		}
 		event.returnValue = props;
 	}).catch(function(error) {
@@ -100,7 +100,7 @@ ipcMain.on('get-num-files', (event, props) => {
 		url:
 			global.sharedObj['domain']+'/db/'+
 			global.sharedObj['selectedDbid']+'?a=API_DoQueryCount'+
-			'&useFids=1&query='+query+
+			'&fmt=structured&useFids=1&query='+query+
 			'&ticket='+global.sharedObj['authTicket']
 	}).then((response) =>{
 		var props = {};
@@ -108,7 +108,6 @@ ipcMain.on('get-num-files', (event, props) => {
 			var numFiles = /(<numMatches>).*?(?=<\/numMatches>)/.exec(response.data)[0];
 			numFiles = numFiles.replace('<numMatches>', '');
 			props["numFiles"] = numFiles;
-
 			if (parseInt(numFiles) === 0) {
 				props['error'] = true;
 				props['errorMessage'] = `
@@ -176,3 +175,19 @@ var parseFileAttachments = function(response, props) {
 	props['numFileIds'] = fileAttachmentIds.length; 
 	return fileAttachmentIds;
 };
+
+/** In Development
+var downloadUrl = function(fileName, url) {
+	return new Promise((resolve, reject) => {
+		axios({
+			type: 'get',
+			url: url
+		}).then(response => {
+
+
+		}).catch(error => {
+			reject();
+		})
+	});
+};
+**/ 
