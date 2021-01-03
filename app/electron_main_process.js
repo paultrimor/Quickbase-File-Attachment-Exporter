@@ -1,4 +1,4 @@
-const {app, BrowserWindow, ipcMain} = require('electron');
+const {app, BrowserWindow, ipcMain, dialog} = require('electron');
 const axios = require('axios');
 const path = require('path');
 const dom = require('xmldom').DOMParser;
@@ -152,6 +152,34 @@ ipcMain.on('get-files', (event, props) => {
 	});
 });
 
+ipcMain.on('get-output-path', (event, props) => {
+	var saveFileLocation = dialog.showOpenDialog(win, {properties: ['openDirectory']});
+	if (!fs.existsSync(saveFileLocation[0])){
+    	fs.mkdirSync(path.join(saveFileLocation[0])); 
+	}
+	event.returnValue = saveFileLocation;
+});
+
+ipcMain.on('download-file', (event, props) => {
+	console.log("download-file !!!");
+	/**
+	axios({
+		method: 'get',
+		url: props.url
+	}).then((response) => {
+		console.log("success");
+		console.log(response);
+	}).catch((error) => {
+		console.log("error");
+		console.log(error);
+	});
+	**/
+	setTimeout(() => {
+		event.returnValue = true; 
+	}, 1000);
+	
+});
+
 var parseError = function(response, props) {
 	try {
    		var errorCode = /(<errcode>).*?(?=<\/errcode>)/.exec(response.data)[0];
@@ -216,17 +244,4 @@ var parseUrls = function(response) {
 		});
 	});	
 	return urls;
-};
-
-var downloadUrl = function(fileName, url) {
-	return new Promise((resolve, reject) => {
-		axios({
-			type: 'get',
-			url: url
-		}).then(response => {
-
-		}).catch(error => {
-			reject();
-		})
-	});
 };

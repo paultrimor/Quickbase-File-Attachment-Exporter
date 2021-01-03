@@ -65,7 +65,6 @@ function Login() {
 			password: password,
 			domain: domain
 		});
-
 		setTicket(res['authTicket']);
 		setError(res['error']);
 		setErrormessage(res['errorMessage']);
@@ -194,21 +193,34 @@ class ExportConsole extends Component {
 	constructor() {
 		super();
 		this.state = {
+			outputPath: '',
 			message: ''
 		};
 	}
 
 	async componentDidMount() {
+		console.log("componentDidMount()");
+		var outputPath = await ipcRenderer.sendSync('get-output-path');
+		this.append('Saving to '+ outputPath);
+		this.setState({outputPath: outputPath});
+
 		var res = await ipcRenderer.sendSync('get-files');
 		this.append("currently downloading "+res.files.length+" files...");
+		for (var i = 0; i < res.files.length; i++) {
+			console.log("for loop @ "+ i);
+			var file = await ipcRenderer.sendSync('download-file', {url: res.files[i].url});
+			//fs.writeFileSync(this.state.outputPath, file, {flag: 'w+'});
+			this.append("file written @ " + i);
+		}
 	}
 
 	append(text) {
-		var newMessage = this.state.message+"\n"+text; 
+		var newMessage = this.state.message+"\n"+text;
 		this.setState({message: newMessage});
 	}
 
 	render() {
+		console.log("render()");
 		return (
 			<div>
 				<pre style={{
