@@ -145,7 +145,7 @@ class TableSelector extends Component {
 
 	render() {
 		if (this.state.complete) {
-			return <Redirect to="/exportConsole" />;
+			return (<Redirect to='/exportConsole' />);
 		}
 		return (
 			<div style={{padding: "15px"}}>
@@ -193,10 +193,32 @@ class TableSelector extends Component {
 class ExportConsole extends Component {
 	constructor() {
 		super();
+		this.state = {
+			message: ''
+		};
+	}
+
+	async componentDidMount() {
+		var res = await ipcRenderer.sendSync('get-files');
+		this.append("currently downloading "+res.files.length+" files...");
+	}
+
+	append(text) {
+		var newMessage = this.state.message+"\n"+text; 
+		this.setState({message: newMessage});
 	}
 
 	render() {
-		<h1>Hello World</h1>
+		return (
+			<div>
+				<pre style={{
+					width: "100%", 
+					height: "400px"
+				}}>
+					{ this.state.message }
+				</pre>
+			</div>
+		);
 	}
 }
 

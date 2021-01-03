@@ -92,13 +92,20 @@ ipcMain.on('get-table-details', (event, props) => {
 });
 
 ipcMain.on('get-num-files', (event, props) => {
+	if (global.sharedObj['fileAttachmentIds'].length < 1) {
+		let props = {
+			'error' : true, 
+			'errorMessage': `There aren't any file attachements on this table to export.`
+		};
+		event.returnValue = props; 
+	}
 	var query = global.sharedObj['fileAttachmentIds'].map((id) => {
 		return "{'"+id+"'.XEX.''}";
 	}).join("AND");
+
 	axios({
 		method: 'get',
-		url:
-			global.sharedObj['domain']+'/db/'+
+		url: global.sharedObj['domain']+'/db/'+
 			global.sharedObj['selectedDbid']+'?a=API_DoQueryCount'+
 			'&fmt=structured&useFids=1&query='+query+
 			'&ticket='+global.sharedObj['authTicket']
@@ -110,16 +117,38 @@ ipcMain.on('get-num-files', (event, props) => {
 			props["numFiles"] = numFiles;
 			if (parseInt(numFiles) === 0) {
 				props['error'] = true;
-				props['errorMessage'] = `
-					There aren't any file attachements on this table to export.
-				`;
-			}
+				props['errorMessage'] = 
+					`There aren't any file attachements on this table to export.`;
+			} 
 		}
 		event.returnValue = props;
 	}).catch((error) => {
 		var props = {};
 		parseError(error, props);
 		event.returnValue = props;
+	});
+});
+
+ipcMain.on('get-files', (event, props) => {
+	var query = global.sharedObj['fileAttachmentIds'].map((id) => {
+		return  "{'"+id+"'.XEX.''}";
+	}).join("AND");
+	var clist = global.sharedObj['fileAttachmentIds'].join(".");
+	axios({
+		method: 'get',
+		url:
+			global.sharedObj['domain']+'/db/'+
+			global.sharedObj['selectedDbid']+'?a=API_DoQuery'+
+			'&fmt=structured&query='+query+
+			'&clist='+clist+'&includeRids=1'+
+			'&ticket='+global.sharedObj['authTicket']
+	}).then(response => {
+		var props = { files: null };
+		props.files = parseUrls(response);
+		event.returnValue = props; 
+	}).catch(error => {
+		var props = {}; 
+		event.returnValue = parseError(error, props);
 	});
 });
 
@@ -176,7 +205,19 @@ var parseFileAttachments = function(response, props) {
 	return fileAttachmentIds;
 };
 
-/** In Development
+var parseUrls = function(response) {
+	var myDom = new dom().parseFromString(response.data.toString());
+	var nodes = xpath.select("//record/f", myDom);
+	var urls = [];
+	nodes.forEach(node => {
+		urls.push({
+			filename: node.childNodes[0].data,
+			url: xpath.select1('//url', node).childNodes[0].data
+		});
+	});	
+	return urls;
+};
+
 var downloadUrl = function(fileName, url) {
 	return new Promise((resolve, reject) => {
 		axios({
@@ -184,10 +225,8 @@ var downloadUrl = function(fileName, url) {
 			url: url
 		}).then(response => {
 
-
 		}).catch(error => {
 			reject();
 		})
 	});
 };
-**/ 
