@@ -1,5 +1,6 @@
 const {app, BrowserWindow, ipcMain, dialog} = require('electron');
 const axios = require('axios');
+
 const path = require('path');
 const dom = require('xmldom').DOMParser;
 const xpath = require('xpath'); 
@@ -9,7 +10,8 @@ global.sharedObj = {
 	'authTicket': '', 
 	'domain': '',
 	'selectedDbid': '',
-	'fileAttachmentIds': []
+	'fileAttachmentIds': [],
+	'outputPath': ''
 }; 
 
 let win;
@@ -145,6 +147,7 @@ ipcMain.on('get-files', (event, props) => {
 	}).then(response => {
 		var props = { files: null };
 		props.files = parseUrls(response);
+		global.sharedObj["files"] = props.files;
 		event.returnValue = props; 
 	}).catch(error => {
 		var props = {}; 
@@ -154,30 +157,40 @@ ipcMain.on('get-files', (event, props) => {
 
 ipcMain.on('get-output-path', (event, props) => {
 	var saveFileLocation = dialog.showOpenDialog(win, {properties: ['openDirectory']});
-	if (!fs.existsSync(saveFileLocation[0])){
+	if (!fs.existsSync(saveFileLocation[0])) {
     	fs.mkdirSync(path.join(saveFileLocation[0])); 
 	}
-	event.returnValue = saveFileLocation;
+	global.sharedObj['outputPath'] = saveFileLocation[0];
+	event.returnValue = true;
 });
 
 ipcMain.on('download-file', (event, props) => {
-	console.log("download-file !!!");
-	/**
+	var filepath = path.resolve(global.sharedObj['outputPath'], props.filename);
+	var writeStream = fs.createWriteStream(filepath);
 	axios({
 		method: 'get',
-		url: props.url
+		url: props.url,
+		responseType: 'stream'
 	}).then((response) => {
-		console.log("success");
-		console.log(response);
+		event.returnValue =
+			new Promise((resolve, reject) => {
+				response.data.pipe(writeStream);
+				let error = null;
+				writeStream.on('error', err => {
+					error = err;
+					writer.close();
+					reject(err);
+				});
+				writeStream.on('close', () => {
+					if (!error) {
+						resolve(true);
+					}
+				});
+			});
 	}).catch((error) => {
-		console.log("error");
 		console.log(error);
+		event.returnValue = false;
 	});
-	**/
-	setTimeout(() => {
-		event.returnValue = true; 
-	}, 1000);
-	
 });
 
 var parseError = function(response, props) {
@@ -240,7 +253,7 @@ var parseUrls = function(response) {
 	nodes.forEach(node => {
 		urls.push({
 			filename: node.childNodes[0].data,
-			url: xpath.select1('//url', node).childNodes[0].data
+			url: xpath.select1('url', node).childNodes[0].data
 		});
 	});	
 	return urls;

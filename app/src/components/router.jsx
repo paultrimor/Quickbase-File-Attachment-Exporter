@@ -198,19 +198,19 @@ class ExportConsole extends Component {
 		};
 	}
 
-	async componentDidMount() {
-		console.log("componentDidMount()");
-		var outputPath = await ipcRenderer.sendSync('get-output-path');
-		this.append('Saving to '+ outputPath);
-		this.setState({outputPath: outputPath});
+	componentDidMount() {
+		this.downloadFiles();
+	}
 
+	async downloadFiles() {
+		await ipcRenderer.sendSync('get-output-path');
 		var res = await ipcRenderer.sendSync('get-files');
 		this.append("currently downloading "+res.files.length+" files...");
+
 		for (var i = 0; i < res.files.length; i++) {
-			console.log("for loop @ "+ i);
-			var file = await ipcRenderer.sendSync('download-file', {url: res.files[i].url});
-			//fs.writeFileSync(this.state.outputPath, file, {flag: 'w+'});
-			this.append("file written @ " + i);
+			await ipcRenderer.sendSync(
+				'download-file',
+				{url: res.files[i].url, filename: res.files[i].filename});
 		}
 	}
 
@@ -220,15 +220,14 @@ class ExportConsole extends Component {
 	}
 
 	render() {
-		console.log("render()");
 		return (
 			<div>
 				<pre style={{
-					width: "100%", 
 					height: "400px"
 				}}>
 					{ this.state.message }
 				</pre>
+				<Link to="/tableSelection">Back To Table Selection</Link>
 			</div>
 		);
 	}
