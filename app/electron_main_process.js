@@ -183,6 +183,7 @@ ipcMain.on('download-file', (event, props) => {
 				});
 				writeStream.on('close', () => {
 					if (!error) {
+						console.log("resolve!");
 						resolve(true);
 					}
 				});
