@@ -199,21 +199,16 @@ class ExportConsole extends Component {
 	}
 
 	async componentDidMount() {
-		await ipcRenderer.sendSync('get-output-path');
+		await ipcRenderer.invoke('get-output-path');
 		var res = await ipcRenderer.sendSync('get-files');
-		console.log("get-files await finished: "); console.log(res);
 		this.append("currently downloading "+res.files.length+" files...");
 		for (var i = 0; i < res.files.length; i++) {
-			this.downloadFile(res.files[i].url, res.files[i].filename);
+			await ipcRenderer.invoke('download-file',
+				{url: res.files[i].url, filename: res.files[i].filename, index: i, size: res.files.length})
+				.then((result) => {
+					this.append(result);
+				});
 		}
-		console.log("componenentDidMount() end");
-	}
-
-	async downloadFile(url, filename) {
-		console.log("downloadFile() Start");
-		await ipcRenderer.sendSync('download-file', {url: url, filename: filename});
-		this.append("append file: " + filename);
-		console.log("downloadFile() End");
 	}
 
 	append(text) {

@@ -17,7 +17,13 @@ global.sharedObj = {
 let win;
 
 app.on('ready', function() {
-	win = new BrowserWindow({width: 400, height: 600});
+	win = new BrowserWindow({
+		width: 400,
+		height: 600,
+		 webPreferences: {
+            nodeIntegration: true
+        }
+	});
 	win.loadURL(
 		path.resolve(__dirname, './index.html')); 
 	win.on('closed', () => {
@@ -155,43 +161,41 @@ ipcMain.on('get-files', (event, props) => {
 	});
 });
 
-ipcMain.on('get-output-path', (event, props) => {
-	var saveFileLocation = dialog.showOpenDialog(win, {properties: ['openDirectory']});
-	if (!fs.existsSync(saveFileLocation[0])) {
-    	fs.mkdirSync(path.join(saveFileLocation[0])); 
+ipcMain.handle('get-output-path', async (event, props) => {
+	var saveFileLocation = await dialog.showOpenDialog(win, {properties: ['openDirectory']});
+	if (!fs.existsSync(saveFileLocation.filePaths[0])) {
+		fs.mkdirSync(path.join(saveFileLocation.filePaths[0]));
 	}
-	global.sharedObj['outputPath'] = saveFileLocation[0];
-	event.returnValue = true;
+	global.sharedObj['outputPath'] = saveFileLocation.filePaths[0];
+	return true;
 });
 
-ipcMain.on('download-file', (event, props) => {
+ipcMain.handle('download-file', async (event, props) => {
 	var filepath = path.resolve(global.sharedObj['outputPath'], props.filename);
 	var writeStream = fs.createWriteStream(filepath);
-	axios({
+	await axios({
 		method: 'get',
-		url: props.url,
+		url: props.url+"?ticket="+global.sharedObj['authTicket'],
 		responseType: 'stream'
 	}).then((response) => {
-		event.returnValue =
-			new Promise((resolve, reject) => {
-				response.data.pipe(writeStream);
-				let error = null;
-				writeStream.on('error', err => {
-					error = err;
-					writer.close();
-					reject(err);
-				});
-				writeStream.on('close', () => {
-					if (!error) {
-						console.log("resolve!");
-						resolve(true);
-					}
-				});
-			});
+		response.data.pipe(writeStream);
+		let error = null;
+		writeStream.on('error', err => {
+			error = err;
+			writer.close();
+			reject(err);
+		});
+		writeStream.on('close', () => {
+			if (!error) {
+				console.log("resolve!");
+				return "[resolve result of download-file]";
+			}
+		});
 	}).catch((error) => {
 		console.log(error);
 		event.returnValue = false;
 	});
+	return `(${props.index+1}/${props.size})downloaded ${props.filename}`;
 });
 
 var parseError = function(response, props) {
