@@ -96,6 +96,7 @@ class TableSelector extends Component {
 		super();
 		this.state = {
 			selectedDbid: '',
+			errorOpacity: '0',
 			error: false,
 			errorMessage: '',
 			numFiles: '',
@@ -136,6 +137,7 @@ class TableSelector extends Component {
 		} else {
 			this.setState({canExport: false});
 		}
+		this.setState({errorOpacity: "100"});
 	}
 
 	exportTable() {
@@ -162,7 +164,13 @@ class TableSelector extends Component {
 						style={{ marginTop: "10px", padding: "5px", display: "block",}}>Get Table Info</button>
 				</div>
 				<div class="message"
-					style={{display: 'block', margin: '5px 0px', height: '150px'}}>
+					style={{
+						display: 'block',
+						margin: '5px 0px',
+						height: '150px',
+						opacity: this.state.errorOpacity,
+						transition: "opacity 1s"
+					}}>
 					{ this.state.error ?
 						<p style={{fontStyle: 'italic', color: 'red'}}>
 							<span style={{fontStyle: 'bold'}}>ERROR: </span>
@@ -194,39 +202,56 @@ class ExportConsole extends Component {
 		super();
 		this.state = {
 			outputPath: '',
-			message: ''
+			message: '',
+			done: false
 		};
 	}
 
 	async componentDidMount() {
-		await ipcRenderer.invoke('get-output-path');
+		var res = await ipcRenderer.invoke('get-output-path');
+		if (!res) {
+			alert("Please select valid file output.");
+			this.componentDidMount();
+		}
+
 		var res = await ipcRenderer.sendSync('get-files');
-		this.append("currently downloading "+res.files.length+" files...");
 		for (var i = 0; i < res.files.length; i++) {
 			await ipcRenderer.invoke('download-file',
 				{url: res.files[i].url, filename: res.files[i].filename, index: i, size: res.files.length})
 				.then((result) => {
 					this.append(result);
+				}).catch((error) => {
+					this.append(error+"");
 				});
+			document.getElementById('console').scrollIntoView({ behavior: "smooth" });
 		}
+		this.setState({done: true});
 	}
 
 	append(text) {
-		console.log("append() " + text);
 		var newMessage = this.state.message+"\n"+text;
 		this.setState({message: newMessage});
 	}
 
 	render() {
-		console.log("render()");
 		return (
 			<div>
-				<pre style={{
-					height: "400px"
-				}}>
+				<pre 
+					id="console"
+					style={{
+						height: "300px",
+						overflowY: "scroll",
+						whiteSpace: "break-spaces",
+						border: "1px solid grey",
+						padding: "5px"
+					}}>
 					{ this.state.message }
 				</pre>
-				<Link to="/tableSelection">Back To Table Selection</Link>
+				{
+					this.state.done ? 
+						<Link to="/tableSelection">Back To Table Selection</Link> : 
+						<p>currently downloading ....</p>
+				}
 			</div>
 		);
 	}

@@ -20,16 +20,17 @@ app.on('ready', function() {
 	win = new BrowserWindow({
 		width: 400,
 		height: 600,
+		autoHideMenuBar: true,
+		icon: __dirname  + '/quickbase-logo.png',
 		 webPreferences: {
             nodeIntegration: true
         }
 	});
+	win.setIcon(path.resolve(__dirname, 'dist', 'quickbase-logo-small.png'));
 	win.loadURL(
 		path.resolve(__dirname, './index.html')); 
 	win.on('closed', () => {
-		fs.rmdirSync(fileLocation, (err) => {
-			console.log('temp directory removes')});
-		win = null
+		win = null;
 	});
 });
 
@@ -162,7 +163,15 @@ ipcMain.on('get-files', (event, props) => {
 });
 
 ipcMain.handle('get-output-path', async (event, props) => {
-	var saveFileLocation = await dialog.showOpenDialog(win, {properties: ['openDirectory']});
+	try {
+		var saveFileLocation = await dialog.showOpenDialog(win, {properties: ['openDirectory']});
+		if (saveFileLocation.canceled) {
+			return false;
+		}
+	} catch(error) {
+		console.log(error);
+		return false;
+	}
 	if (!fs.existsSync(saveFileLocation.filePaths[0])) {
 		fs.mkdirSync(path.join(saveFileLocation.filePaths[0]));
 	}
@@ -187,13 +196,12 @@ ipcMain.handle('download-file', async (event, props) => {
 		});
 		writeStream.on('close', () => {
 			if (!error) {
-				console.log("resolve!");
-				return "[resolve result of download-file]";
+				return true;
 			}
 		});
 	}).catch((error) => {
 		console.log(error);
-		event.returnValue = false;
+		return false;
 	});
 	return `(${props.index+1}/${props.size})downloaded ${props.filename}`;
 });
