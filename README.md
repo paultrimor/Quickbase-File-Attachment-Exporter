@@ -1,6 +1,6 @@
 # Quickbase-File-Attachment-Exporter
 
-Desktop wizard downloading ALL file attachments from a Quickbase application.
+Desktop wizard for downloading ALL file attachments from a Quickbase application.
 
 ## How To Use 
 You can clone this repository and build the project using `npm run start`. Or if you are using windows you can download a packaged version here:
