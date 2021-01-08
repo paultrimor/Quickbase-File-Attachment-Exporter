@@ -5,7 +5,6 @@ const path = require('path');
 const dom = require('xmldom').DOMParser;
 const xpath = require('xpath'); 
 const fs = require('fs');
-
 global.sharedObj = { 
 	'authTicket': '', 
 	'domain': '',
@@ -62,6 +61,7 @@ ipcMain.on('get-authentication', async (event, props) => {
   		var props = {};
   		parseError(error, props);
   		props['authTicket'] = '';
+  		props['errorMessage'] += ' Please use domain format: https://realm.quickbase.com';
   		event.returnValue = props; 
   	});
 });

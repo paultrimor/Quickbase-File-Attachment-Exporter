@@ -14,7 +14,6 @@ class App extends Component {
 			<Router>
 				<div id="Logo" ></div>
 				<p id="title">Quickbase Bulk Document Exporter</p>
-
 				<div>
 					<Switch>
 						<Route path='/login'>
@@ -74,7 +73,7 @@ function Login() {
 		<div style={{padding: "5px"}}>
 			<label for='domain'>Quickbase Domain</label><br />
 			<input type='text' name='domain' 
-				placeholder='https://www.realm.quickbase.com' onChange={handleChange} /><br />
+				placeholder='https://realm.quickbase.com' onChange={handleChange} /><br />
 			<label for='username'>QB Username</label>
 			<input type='text' name='username' onChange={handleChange}/><br />
 			<label for='password'>QB Password</label>
