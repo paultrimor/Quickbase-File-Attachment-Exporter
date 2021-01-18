@@ -77,7 +77,7 @@ function Login() {
 			<label for='username'>QB Username</label>
 			<input type='text' name='username' onChange={handleChange}/><br />
 			<label for='password'>QB Password</label>
-			<input type='text' name='password' onChange={handleChange}/><br />
+			<input type='password' name='password' onChange={handleChange}/><br />
 			<button onClick={getAuth}>Submit</button>
 			{
 				error ? <p style={{fontStyle: 'italic', color: 'red'}}>ERROR: {errormessage}</p>	
