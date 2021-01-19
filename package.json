@@ -12,7 +12,7 @@
 		"package-linux": "electron-packager . electron-tutorial-app --overwrite --asar=true --platform=linux --arch=x64 --prune=true --out=release-builds"
 	},
 	"dependencies": {
-		"axios": "^0.19.2",
+		"axios": "^0.21.1",
 		"fs": "0.0.1-security",
 		"path": "^0.12.7",
 		"react": "^16.14.0",
